@@ -4,60 +4,36 @@
 // By exporting all the messages (Request and Response)
 // it becomes very easy for the client to communicate
 // back and forth with the server.
+
 package core
 
 import (
-	"errors"
-	"time"
+	"encoding/xml"
 )
 
 type Response struct {
-	Message string
-	Ok      bool
+	Ok         bool
+	Message    string
+	Vegitables Vegitables
 }
 
 type Request struct {
-	Name string
+	Command []string
 }
 
-// HandlerName provider the name of the only
-// method that `core` exposes via the RPC
-// interface.
-//
-// This could be replaced by the use of the reflect
-// package (e.g, `reflect.ValueOf(func).Pointer()).Name()`).
-const HandlerName = "Handler.Execute"
-
-// Handler holds the methods to be exposed by the RPC
-// server as well as properties that modify the methods'
-// behavior.
-type Handler struct {
-
-	// Sleep adds a little sleep between to the
-	// method execution to simulate a time-consuming
-	// operation.
-	Sleep time.Duration
+// A struct which contains the complete
+// array of all vegitables in the file
+type Vegitables struct {
+	XMLName    xml.Name    `xml:"vegitables"`
+	Vegitables []Vegitable `xml:"vegitable"`
 }
 
-// Execute is the exported method that a RPC client can
-// make use of by calling the RPC server using `HandlerName`
-// as the endpoint.
-//
-// It takes a Request and produces a Response if no error
-// happens, possibly sleeping in between if a sleep is
-// specified in Handler.
-func (h *Handler) Execute(req Request, res *Response) (err error) {
-	if req.Name == "" {
-		err = errors.New("A name must be specified")
-		return
-	}
-
-	if h.Sleep != 0 {
-		time.Sleep(h.Sleep)
-	}
-
-	res.Ok = true
-	res.Message = "Hello " + req.Name
-
-	return
+// the vegitable struct, this contains
+// vegitable name name, price per kg and
+// remaining kgs
+type Vegitable struct {
+	XMLName      xml.Name `xml:"vegitable"`
+	Name         string   `xml:"name"`
+	PricePerKg   string   `xml:"pricePerKg"`
+	RemainingKgs string   `xml:"remainingKgs"`
 }

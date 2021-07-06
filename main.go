@@ -64,7 +64,8 @@ func runServer() {
 		os.Exit(0)
 	}()
 
-	must(server.Start())
+	must(server.StartServer())
+
 	return
 }
 
@@ -81,10 +82,14 @@ func runClient() {
 
 	must(client.Init())
 
-	response, err := client.Execute(nil, "ciro")
-	must(err)
+	go func() {
+		handleSignals()
+		client.Close()
+		os.Exit(0)
+	}()
 
-	log.Println(response)
+	must(client.Start())
+	return
 }
 
 // main execution - validates flags and constructs the internal
