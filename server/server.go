@@ -45,6 +45,9 @@ func (s *Server) Close() (err error) {
 // initializing our vegitables array
 var vegitables core.Vegitables
 
+//Server busy flag
+var serverBusy = false
+
 func showVegitable(args ...string) error {
 	if args[0] == "vegitable" {
 		table := tablewriter.NewWriter(os.Stdout)
@@ -103,13 +106,28 @@ func showVegitable(args ...string) error {
 func addVegitable(args ...string) error {
 	if args[0] == "vegitable" {
 		if len(args) == 4 {
+			for _, v := range vegitables.Vegitables {
+				if v.Name == args[1] {
+					fmt.Println("Cannot add the vegitable! Vegitable '" + v.Name + "' already exists!")
+					return nil
+				}
+			}
+
 			var vegitable core.Vegitable
 			vegitable.Name = args[1]
 			vegitable.PricePerKg = args[2]
 			vegitable.RemainingKgs = args[3]
 
+			if serverBusy {
+				fmt.Println("Server is busy! Please try again later!")
+				return nil
+			} else {
+				serverBusy = true
+			}
+
 			vegitables.Vegitables = append(vegitables.Vegitables, vegitable)
 			writeToDB()
+			serverBusy = false
 			fmt.Println("Vegitable '" + vegitable.Name + "' is successfully added")
 			return nil
 		} else {
@@ -128,8 +146,16 @@ func updateVegitable(args ...string) error {
 		if len(args) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == args[1] {
+					if serverBusy {
+						fmt.Println("Server is busy! Please try again later!")
+						return nil
+					} else {
+						serverBusy = true
+					}
+
 					vegitables.Vegitables[v].PricePerKg = args[2]
 					writeToDB()
+					serverBusy = false
 					fmt.Println("Vegitable '" + vegitables.Vegitables[v].Name + "' is successfully updated!")
 					return nil
 				}
@@ -144,8 +170,16 @@ func updateVegitable(args ...string) error {
 		if len(args) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == args[1] {
+					if serverBusy {
+						fmt.Println("Server is busy! Please try again later!")
+						return nil
+					} else {
+						serverBusy = true
+					}
+
 					vegitables.Vegitables[v].RemainingKgs = args[2]
 					writeToDB()
+					serverBusy = false
 					fmt.Println("Vegitable '" + vegitables.Vegitables[v].Name + "' is successfully updated!")
 					return nil
 				}
@@ -248,13 +282,29 @@ func (h *Handler) CaddVegitable(req core.Request, res *core.Response) (err error
 
 	if req.Command[0] == "vegitable" {
 		if len(req.Command) == 4 {
+			for _, v := range vegitables.Vegitables {
+				if v.Name == req.Command[1] {
+					res.Message = "Cannot add the vegitable! Vegitable '" + v.Name + "' already exists!"
+					res.Ok = false
+					return nil
+				}
+			}
+
 			var vegitable core.Vegitable
 			vegitable.Name = req.Command[1]
 			vegitable.PricePerKg = req.Command[2]
 			vegitable.RemainingKgs = req.Command[3]
-			vegitables.Vegitables = append(vegitables.Vegitables, vegitable)
+			if serverBusy {
+				res.Message = "Server is busy! Please try again later!"
+				res.Ok = false
+				return nil
+			} else {
+				serverBusy = true
+			}
 
+			vegitables.Vegitables = append(vegitables.Vegitables, vegitable)
 			writeToDB()
+			serverBusy = false
 			res.Message = "Vegitable '" + vegitable.Name + "' is added successfully!"
 			res.Ok = true
 			return nil
@@ -281,9 +331,17 @@ func (h *Handler) CupdateVegitable(req core.Request, res *core.Response) (err er
 		if len(req.Command) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == req.Command[1] {
-					vegitables.Vegitables[v].PricePerKg = req.Command[2]
+					if serverBusy {
+						res.Message = "Server is busy! Please try again later!"
+						res.Ok = false
+						return nil
+					} else {
+						serverBusy = true
+					}
 
+					vegitables.Vegitables[v].PricePerKg = req.Command[2]
 					writeToDB()
+					serverBusy = false
 					res.Message = "Vegitable '" + vegitables.Vegitables[v].Name + "' is updated successfully!"
 					res.Ok = true
 					return nil
@@ -301,9 +359,17 @@ func (h *Handler) CupdateVegitable(req core.Request, res *core.Response) (err er
 		if len(req.Command) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == req.Command[1] {
-					vegitables.Vegitables[v].RemainingKgs = req.Command[2]
+					if serverBusy {
+						res.Message = "Server is busy! Please try again later!"
+						res.Ok = false
+						return nil
+					} else {
+						serverBusy = true
+					}
 
+					vegitables.Vegitables[v].RemainingKgs = req.Command[2]
 					writeToDB()
+					serverBusy = false
 					res.Message = "Vegitable '" + vegitables.Vegitables[v].Name + "' is updated successfully!"
 					res.Ok = true
 					return nil
