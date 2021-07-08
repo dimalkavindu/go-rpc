@@ -16,6 +16,7 @@ import (
 	"net/rpc/jsonrpc"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/dimalkavindu/go-rpc/core"
@@ -42,11 +43,11 @@ func (s *Server) Close() (err error) {
 	return
 }
 
-// initializing our vegitables array
-var vegitables core.Vegitables
-
-//Server busy flag
-var serverBusy = false
+var (
+	mutex sync.Mutex
+	// initializing our vegitables array
+	vegitables core.Vegitables
+)
 
 func showVegitable(args ...string) error {
 	if args[0] == "vegitable" {
@@ -118,16 +119,10 @@ func addVegitable(args ...string) error {
 			vegitable.PricePerKg = args[2]
 			vegitable.RemainingKgs = args[3]
 
-			if serverBusy {
-				fmt.Println("Server is busy! Please try again later!")
-				return nil
-			} else {
-				serverBusy = true
-			}
-
+			mutex.Lock()
 			vegitables.Vegitables = append(vegitables.Vegitables, vegitable)
 			writeToDB()
-			serverBusy = false
+			mutex.Unlock()
 			fmt.Println("Vegitable '" + vegitable.Name + "' is successfully added")
 			return nil
 		} else {
@@ -146,16 +141,10 @@ func updateVegitable(args ...string) error {
 		if len(args) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == args[1] {
-					if serverBusy {
-						fmt.Println("Server is busy! Please try again later!")
-						return nil
-					} else {
-						serverBusy = true
-					}
-
+					mutex.Lock()
 					vegitables.Vegitables[v].PricePerKg = args[2]
 					writeToDB()
-					serverBusy = false
+					mutex.Unlock()
 					fmt.Println("Vegitable '" + vegitables.Vegitables[v].Name + "' is successfully updated!")
 					return nil
 				}
@@ -170,16 +159,10 @@ func updateVegitable(args ...string) error {
 		if len(args) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == args[1] {
-					if serverBusy {
-						fmt.Println("Server is busy! Please try again later!")
-						return nil
-					} else {
-						serverBusy = true
-					}
-
+					mutex.Lock()
 					vegitables.Vegitables[v].RemainingKgs = args[2]
 					writeToDB()
-					serverBusy = false
+					mutex.Unlock()
 					fmt.Println("Vegitable '" + vegitables.Vegitables[v].Name + "' is successfully updated!")
 					return nil
 				}
@@ -294,17 +277,12 @@ func (h *Handler) CaddVegitable(req core.Request, res *core.Response) (err error
 			vegitable.Name = req.Command[1]
 			vegitable.PricePerKg = req.Command[2]
 			vegitable.RemainingKgs = req.Command[3]
-			if serverBusy {
-				res.Message = "Server is busy! Please try again later!"
-				res.Ok = false
-				return nil
-			} else {
-				serverBusy = true
-			}
 
+			mutex.Lock()
 			vegitables.Vegitables = append(vegitables.Vegitables, vegitable)
 			writeToDB()
-			serverBusy = false
+			mutex.Unlock()
+
 			res.Message = "Vegitable '" + vegitable.Name + "' is added successfully!"
 			res.Ok = true
 			return nil
@@ -331,17 +309,10 @@ func (h *Handler) CupdateVegitable(req core.Request, res *core.Response) (err er
 		if len(req.Command) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == req.Command[1] {
-					if serverBusy {
-						res.Message = "Server is busy! Please try again later!"
-						res.Ok = false
-						return nil
-					} else {
-						serverBusy = true
-					}
-
+					mutex.Lock()
 					vegitables.Vegitables[v].PricePerKg = req.Command[2]
 					writeToDB()
-					serverBusy = false
+					mutex.Unlock()
 					res.Message = "Vegitable '" + vegitables.Vegitables[v].Name + "' is updated successfully!"
 					res.Ok = true
 					return nil
@@ -359,17 +330,10 @@ func (h *Handler) CupdateVegitable(req core.Request, res *core.Response) (err er
 		if len(req.Command) == 3 {
 			for v := 0; v < len(vegitables.Vegitables); v++ {
 				if vegitables.Vegitables[v].Name == req.Command[1] {
-					if serverBusy {
-						res.Message = "Server is busy! Please try again later!"
-						res.Ok = false
-						return nil
-					} else {
-						serverBusy = true
-					}
-
+					mutex.Lock()
 					vegitables.Vegitables[v].RemainingKgs = req.Command[2]
 					writeToDB()
-					serverBusy = false
+					mutex.Unlock()
 					res.Message = "Vegitable '" + vegitables.Vegitables[v].Name + "' is updated successfully!"
 					res.Ok = true
 					return nil
